@@ -1,0 +1,119 @@
+{
+  "suite": "browser-url-policy",
+  "schema_version": 1,
+  "corpus_version": "0.1.0",
+  "generated_by": "prism-parity:tools/generate-browser-refusals.php for php; the ports' own runners for ts and py. The CODE is the contract and is pinned; the sentence is not, and is deliberately never pinned — the three implementations word these differently on purpose, and a test over the prose holds every language to a translation.",
+  "cases": [
+    {
+      "id": "url-0001",
+      "title": "an allowed host on https",
+      "policy": { "allowed_hosts": ["docs.example.com"] },
+      "url": "https://docs.example.com/page",
+      "refusal": { "php": null, "ts": null, "py": null },
+      "agrees": true,
+      "notes": "The control. Every other row in this suite is noise until this one passes: if the allowed case is refused, the policy is not discriminating, it is just closed."
+    },
+    {
+      "id": "url-0002",
+      "title": "a host nobody allowed",
+      "policy": { "allowed_hosts": ["docs.example.com"] },
+      "url": "https://evil.test/",
+      "refusal": { "php": "host_not_allowed", "ts": "host_not_allowed", "py": "host_not_allowed" },
+      "agrees": true,
+      "notes": "The whole point of the allow-list. If nothing else here runs, this one must."
+    },
+    {
+      "id": "url-0003",
+      "title": "credentials in the URL",
+      "policy": { "allowed_hosts": ["docs.example.com"] },
+      "url": "https://user:pass@docs.example.com/",
+      "refusal": { "php": "url_credentials_refused", "ts": "url_credentials_refused", "py": "url_credentials_refused" },
+      "agrees": true,
+      "notes": "Refused before the host is even considered, in all three. They would be sent to whatever host the rest of the string names, and a model that can compose a URL can compose that."
+    },
+    {
+      "id": "url-0004",
+      "title": "plain http against an https policy",
+      "policy": { "allowed_hosts": ["docs.example.com"] },
+      "url": "http://docs.example.com/",
+      "refusal": { "php": "https_required", "ts": "https_required", "py": "https_required" },
+      "agrees": true,
+      "notes": "Ordering matters and is pinned by url-0005: scheme is checked before the private-network test, so a plain-http loopback URL reports the scheme, not the address."
+    },
+    {
+      "id": "url-0005",
+      "title": "the cloud metadata endpoint, explicitly allow-listed",
+      "policy": { "allowed_hosts": ["169.254.169.254"] },
+      "url": "https://169.254.169.254/latest/meta-data/",
+      "refusal": { "php": "private_network_refused", "ts": "private_address_refused", "py": "private_address_refused" },
+      "agrees": false,
+      "divergence": "refusal_code_renamed_in_the_ports",
+      "notes": "THE row that matters most in this suite, and it disagrees. All three refuse — the behaviour is right everywhere, and 169.254.169.254 is the single most valuable target an SSRF can reach. But the reference calls it `private_network_refused` and both ports call it `private_address_refused`, so a consumer switching on the code gets no match in one of the two directions. See G-21."
+    },
+    {
+      "id": "url-0006",
+      "title": "loopback, explicitly allow-listed",
+      "policy": { "allowed_hosts": ["127.0.0.1"] },
+      "url": "https://127.0.0.1/admin",
+      "refusal": { "php": "private_network_refused", "ts": "private_address_refused", "py": "private_address_refused" },
+      "agrees": false,
+      "divergence": "refusal_code_renamed_in_the_ports",
+      "notes": "Same divergence, second address family. Pinned separately from url-0005 because a fix that special-cased link-local would turn that row green and leave this red."
+    },
+    {
+      "id": "url-0007",
+      "title": "an RFC 1918 address, explicitly allow-listed",
+      "policy": { "allowed_hosts": ["10.0.0.5"] },
+      "url": "https://10.0.0.5/",
+      "refusal": { "php": "private_network_refused", "ts": "private_address_refused", "py": "private_address_refused" },
+      "agrees": false,
+      "divergence": "refusal_code_renamed_in_the_ports",
+      "notes": "Third address family, same divergence. Together with url-0005 and url-0006 this pins that the BEHAVIOUR is identical in all three and only the code differs — which is what makes G-21 a rename rather than a security hole."
+    },
+    {
+      "id": "url-0008",
+      "title": "a port nobody allowed",
+      "policy": { "allowed_hosts": ["docs.example.com"], "allowed_ports": [443] },
+      "url": "https://docs.example.com:8443/",
+      "refusal": { "php": "port_not_allowed", "ts": "port_not_allowed", "py": "port_not_allowed" },
+      "agrees": true,
+      "notes": "Checked AFTER the host, in all three. A URL that fails both reports the host, which is the more useful of the two to a reader."
+    },
+    {
+      "id": "url-0009",
+      "title": "not a URL at all",
+      "policy": { "allowed_hosts": ["docs.example.com"] },
+      "url": "not a url",
+      "refusal": { "php": "invalid_url", "ts": "invalid_url", "py": "invalid_url" },
+      "agrees": true,
+      "notes": "A parser that accepted this would hand a relative string to an engine and let it resolve against whatever page is currently open."
+    },
+    {
+      "id": "url-0010",
+      "title": "a relative path",
+      "policy": { "allowed_hosts": ["docs.example.com"] },
+      "url": "/relative/path",
+      "refusal": { "php": "invalid_url", "ts": "invalid_url", "py": "invalid_url" },
+      "agrees": true,
+      "notes": "The realistic shape of the same mistake. A model asked to 'go to the admin page' composes exactly this."
+    },
+    {
+      "id": "url-0011",
+      "title": "a trailing dot and mixed case in the host",
+      "policy": { "allowed_hosts": ["docs.example.com"] },
+      "url": "https://DOCS.Example.com./page",
+      "refusal": { "php": null, "ts": null, "py": null },
+      "agrees": true,
+      "notes": "`docs.example.com.` is the same origin as `docs.example.com`, and a policy that missed the equivalence would be trivially bypassed in the other direction — an attacker-supplied host that the allow-list fails to match is safe, but one the allow-list fails to RECOGNISE as already-allowed teaches operators to widen it."
+    },
+    {
+      "id": "url-0012",
+      "title": "a public host that merely contains an allowed one",
+      "policy": { "allowed_hosts": ["example.com"] },
+      "url": "https://example.com.evil.test/",
+      "refusal": { "php": "host_not_allowed", "ts": "host_not_allowed", "py": "host_not_allowed" },
+      "agrees": true,
+      "notes": "The suffix attack. A `str_contains` or `endsWith` implementation of the allow-list passes this and hands the agent to an attacker-controlled origin; every implementation here compares the whole label."
+    }
+  ]
+}
