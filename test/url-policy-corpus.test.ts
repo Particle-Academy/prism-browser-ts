@@ -11,11 +11,14 @@ import { BrowserPolicy, BrowserRefused, type BrowserRefusalCode } from '../src/i
  * differently on purpose, and asserting the prose holds every language to a
  * translation.
  *
- * The rows that diverge are asserted as DIVERGENCES rather than skipped. All
- * three languages refuse the same URLs — the security behaviour is identical
- * and every private address is blocked — but the reference names it
- * `private_network_refused` and this port names it `private_address_refused`.
- * See G-21.
+ * G-21 IS CLOSED AND EVERY ROW NOW AGREES. Three of them used to be recorded as
+ * divergences: all three languages refused the same URLs — the security
+ * behaviour was identical and every private address was blocked — but the
+ * reference named it `private_network_refused` and exposed it as
+ * `$refused->reason`, where this port has always said `private_address_refused`
+ * on `.code`. The REFERENCE moved, because the check is per-address rather than
+ * per-network. Nothing changed in this file's implementation, only what it is
+ * allowed to expect of the reference.
  */
 interface PolicyCase {
   id: string;
@@ -24,7 +27,6 @@ interface PolicyCase {
   url: string;
   refusal: { php: string | null; ts: string | null; py: string | null };
   agrees: boolean;
-  divergence?: string;
   notes: string;
 }
 
@@ -50,8 +52,9 @@ const refusalOf = (entry: PolicyCase): BrowserRefusalCode | null => {
   }
 };
 
-const agreeing = corpus.cases.filter((entry) => entry.agrees);
-const diverging = corpus.cases.filter((entry) => !entry.agrees);
+const privateAddress = corpus.cases.filter(
+  (entry) => entry.refusal.ts === 'private_address_refused',
+);
 
 describe('the cross-language URL-policy corpus', () => {
   it('is the whole suite, not a subset someone trimmed to green', () => {
@@ -62,28 +65,36 @@ describe('the cross-language URL-policy corpus', () => {
     expect(refusalOf(entry)).toBe(entry.refusal.ts);
   });
 
-  it.each(agreeing)('$id agrees with the PHP reference ($title)', (entry) => {
+  it.each(corpus.cases)('$id agrees with the PHP reference ($title)', (entry) => {
     expect(refusalOf(entry)).toBe(entry.refusal.php);
   });
 
-  it.each(diverging)('$id refuses like the reference but NAMES it differently ($title)', (entry) => {
-    // Two assertions, and both matter. The behaviour is identical — every one
-    // of these is refused in all three languages — and only the code differs.
-    // Asserting the refusal happened is what keeps this a naming finding rather
-    // than letting a real hole hide behind the word "divergence".
-    expect(refusalOf(entry)).not.toBeNull();
-    expect(refusalOf(entry)).not.toBe(entry.refusal.php);
+  it('records no divergence left to explain', () => {
+    // The count is asserted rather than the absence, so that a row quietly
+    // flipped back to `agrees: false` fails here instead of being skipped by
+    // every `filter` above it.
+    expect(corpus.cases.filter((entry) => !entry.agrees)).toEqual([]);
   });
 
-  it('diverges on exactly the three rows the manifest names', () => {
-    expect(diverging.map((entry) => entry.id)).toEqual(['url-0005', 'url-0006', 'url-0007']);
+  it('refuses EVERY private address in the corpus, on exactly the rows that claim to', () => {
+    // The security claim, stated independently of the code comparison. The
+    // comparisons above only check that this language produces the string the
+    // corpus recorded; if a change turned one of these into an ALLOW, the
+    // corpus would be regenerated to record the allow and they would all stay
+    // green. This is what would go red.
+    expect(privateAddress.map((entry) => entry.id)).toEqual(['url-0005', 'url-0006', 'url-0007']);
+
+    for (const entry of privateAddress) {
+      expect(refusalOf(entry)).toBe('private_address_refused');
+    }
   });
 
-  it('refuses EVERY private address in the corpus, whatever it calls it', () => {
-    // The security claim, stated independently of the naming argument. If a
-    // future rename accidentally turned one of these into an allow, the
-    // divergence tests above would still pass — they only compare codes.
-    for (const entry of diverging) expect(refusalOf(entry)).not.toBeNull();
+  it('never answers to the reference’s retired name', () => {
+    for (const entry of corpus.cases) {
+      expect([entry.refusal.php, entry.refusal.ts, entry.refusal.py]).not.toContain(
+        'private_network_refused',
+      );
+    }
   });
 
   it('agrees with Python on every row', () => {

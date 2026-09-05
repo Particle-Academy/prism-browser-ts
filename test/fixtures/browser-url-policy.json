@@ -74,7 +74,7 @@
                 "py": "https_required"
             },
             "agrees": true,
-            "notes": "Ordering matters and is pinned by url-0005: scheme is checked before the private-network test, so a plain-http loopback URL reports the scheme, not the address."
+            "notes": "Ordering matters and is pinned by url-0005: scheme is checked before the private-address test, so a plain-http loopback URL reports the scheme, not the address."
         },
         {
             "id": "url-0005",
@@ -87,13 +87,12 @@
             },
             "url": "https://169.254.169.254/latest/meta-data/",
             "refusal": {
-                "php": "private_network_refused",
+                "php": "private_address_refused",
                 "ts": "private_address_refused",
                 "py": "private_address_refused"
             },
-            "agrees": false,
-            "divergence": "refusal_code_renamed_in_the_ports",
-            "notes": "THE row that matters most in this suite, and it disagrees. All three refuse — the behaviour is right everywhere, and 169.254.169.254 is the single most valuable target an SSRF can reach. But the reference calls it `private_network_refused` and both ports call it `private_address_refused`, so a consumer switching on the code gets no match in one of the two directions. See G-21."
+            "agrees": true,
+            "notes": "THE row that matters most in this suite. Every language refuses it, and 169.254.169.254 is the single most valuable target an SSRF can reach — tested in its ALLOW-LISTED form on purpose, because an operator naming it explicitly is exactly the mistake the policy has to survive. All three now say `private_address_refused`. The reference used to say `private_network_refused`, so a consumer switching on the code fell through to its default branch in one of the two directions and read an SSRF refusal as an unknown failure; closed by the reference adopting the ports name and accessor. See G-21."
         },
         {
             "id": "url-0006",
@@ -106,13 +105,12 @@
             },
             "url": "https://127.0.0.1/admin",
             "refusal": {
-                "php": "private_network_refused",
+                "php": "private_address_refused",
                 "ts": "private_address_refused",
                 "py": "private_address_refused"
             },
-            "agrees": false,
-            "divergence": "refusal_code_renamed_in_the_ports",
-            "notes": "Same divergence, second address family. Pinned separately from url-0005 because a fix that special-cased link-local would turn that row green and leave this red."
+            "agrees": true,
+            "notes": "Second address family, same refusal. Pinned separately from url-0005 because a fix that special-cased link-local would turn that row green and leave this one red. Loopback is how an attacker reaches every service on the host that assumed it was unreachable, and allow-listing it does not make it public."
         },
         {
             "id": "url-0007",
@@ -125,13 +123,12 @@
             },
             "url": "https://10.0.0.5/",
             "refusal": {
-                "php": "private_network_refused",
+                "php": "private_address_refused",
                 "ts": "private_address_refused",
                 "py": "private_address_refused"
             },
-            "agrees": false,
-            "divergence": "refusal_code_renamed_in_the_ports",
-            "notes": "Third address family, same divergence. Together with url-0005 and url-0006 this pins that the BEHAVIOUR is identical in all three and only the code differs — which is what makes G-21 a rename rather than a security hole."
+            "agrees": true,
+            "notes": "Third address family, and the row that makes this trio a per-ADDRESS claim rather than a per-network one — which is why the reference took the ports spelling rather than the other way round. Together with url-0005 and url-0006 it pins that the behaviour is identical in all three, so G-21 was always a rename and never a hole."
         },
         {
             "id": "url-0008",
