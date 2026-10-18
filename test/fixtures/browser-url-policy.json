@@ -222,6 +222,119 @@
             },
             "agrees": true,
             "notes": "The suffix attack. A `str_contains` or `endsWith` implementation of the allow-list passes this and hands the agent to an attacker-controlled origin; every implementation here compares the whole label."
+        },
+        {
+            "id": "url-0013",
+            "title": "Alibaba Cloud's metadata endpoint, in CGNAT, even when allow-listed",
+            "since": "0.1.9",
+            "policy": {
+                "allowed_hosts": [
+                    "100.100.100.200"
+                ]
+            },
+            "url": "https://100.100.100.200/latest/meta-data/",
+            "refusal": {
+                "php": "private_address_refused",
+                "ts": "private_address_refused",
+                "py": "private_address_refused"
+            },
+            "agrees": true,
+            "notes": "G-89. 100.64.0.0/10 is shared address space, not private, and filter_var's private and reserved flags admit it. Allow-listed here, because the policy's promise is a refusal even then; all three ports admitted it before the explicit list."
+        },
+        {
+            "id": "url-0014",
+            "title": "the NAT64 spelling of 169.254.169.254, allow-listed",
+            "since": "0.1.9",
+            "policy": {
+                "allowed_hosts": [
+                    "[64:ff9b::a9fe:a9fe]",
+                    "64:ff9b::a9fe:a9fe"
+                ]
+            },
+            "url": "https://[64:ff9b::a9fe:a9fe]/latest/meta-data/",
+            "refusal": {
+                "php": "private_address_refused",
+                "ts": "private_address_refused",
+                "py": "private_address_refused"
+            },
+            "agrees": true,
+            "notes": "G-89. Judged by the IPv4 address embedded in 64:ff9b::/96. The allow-list names both spellings, bracketed and bare, because the languages disagree on which one a URL's host is (PHP and WHATWG keep the brackets, Python's urlsplit drops them)."
+        },
+        {
+            "id": "url-0015",
+            "title": "the 6to4 spelling of 169.254.169.254, allow-listed",
+            "since": "0.1.9",
+            "policy": {
+                "allowed_hosts": [
+                    "[2002:a9fe:a9fe::]",
+                    "2002:a9fe:a9fe::"
+                ]
+            },
+            "url": "https://[2002:a9fe:a9fe::]/latest/meta-data/",
+            "refusal": {
+                "php": "private_address_refused",
+                "ts": "private_address_refused",
+                "py": "private_address_refused"
+            },
+            "agrees": true,
+            "notes": "G-89. 2002::/16 embeds an IPv4 address in bits 16-48; judged by that address."
+        },
+        {
+            "id": "url-0016",
+            "title": "shorthand IPv4 a browser resolves to loopback, allow-listed",
+            "since": "0.1.9",
+            "policy": {
+                "allowed_hosts": [
+                    "127.1",
+                    "127.0.0.1"
+                ]
+            },
+            "url": "https://127.1/",
+            "refusal": {
+                "php": "private_address_refused",
+                "ts": "private_address_refused",
+                "py": "private_address_refused"
+            },
+            "agrees": true,
+            "notes": "A browser reads 127.1 the way libc's inet_aton does, as 127.0.0.1, without DNS. PHP's parse_url and Python's urlsplit leave it a name, so it reached the allow-list instead of the address check, until prism-browser v0.1.2 and prism-ai-browser 0.1.1. WHATWG URL parsing normalises it, so the TypeScript port refused it already."
+        },
+        {
+            "id": "url-0017",
+            "title": "the metadata endpoint written as one hex number, allow-listed",
+            "since": "0.1.9",
+            "policy": {
+                "allowed_hosts": [
+                    "0xa9fea9fe",
+                    "169.254.169.254"
+                ]
+            },
+            "url": "https://0xa9fea9fe/latest/meta-data/",
+            "refusal": {
+                "php": "private_address_refused",
+                "ts": "private_address_refused",
+                "py": "private_address_refused"
+            },
+            "agrees": true,
+            "notes": "inet_aton reads 0xa9fea9fe as 169.254.169.254. The same normalisation gap as url-0016, aimed at the address that matters most."
+        },
+        {
+            "id": "url-0018",
+            "title": "NAT64 of a PUBLIC address still navigates when allow-listed",
+            "since": "0.1.9",
+            "policy": {
+                "allowed_hosts": [
+                    "[64:ff9b::808:808]",
+                    "64:ff9b::808:808"
+                ]
+            },
+            "url": "https://[64:ff9b::808:808]/",
+            "refusal": {
+                "php": null,
+                "ts": null,
+                "py": null
+            },
+            "agrees": true,
+            "notes": "G-89's control. A DNS64 network gives public sites 64:ff9b:: addresses (this is 8.8.8.8). A policy that refused NAT64 outright would pass url-0014 and fail here."
         }
     ]
 }

@@ -58,7 +58,7 @@ const privateAddress = corpus.cases.filter(
 
 describe('the cross-language URL-policy corpus', () => {
   it('is the whole suite, not a subset someone trimmed to green', () => {
-    expect(corpus.cases).toHaveLength(12);
+    expect(corpus.cases).toHaveLength(18);
   });
 
   it.each(corpus.cases)('$id produces this language’s recorded code ($title)', (entry) => {
@@ -82,7 +82,7 @@ describe('the cross-language URL-policy corpus', () => {
     // corpus recorded; if a change turned one of these into an ALLOW, the
     // corpus would be regenerated to record the allow and they would all stay
     // green. This is what would go red.
-    expect(privateAddress.map((entry) => entry.id)).toEqual(['url-0005', 'url-0006', 'url-0007']);
+    expect(privateAddress.map((entry) => entry.id)).toEqual(['url-0005', 'url-0006', 'url-0007', 'url-0013', 'url-0014', 'url-0015', 'url-0016', 'url-0017']);
 
     for (const entry of privateAddress) {
       expect(refusalOf(entry)).toBe('private_address_refused');
