@@ -44,16 +44,6 @@ export interface BrowserPolicyOptions {
   requireHttps?: boolean;
   maxObservationBytes?: number;
   allowedPorts?: readonly number[];
-  /**
-   * Allow a private or loopback address.
-   *
-   * OFF by default, and the reason is SSRF: a browser an agent can point at
-   * `http://169.254.169.254/` is a cloud metadata endpoint an agent can read,
-   * and one pointed at `localhost` reaches every service on the host that
-   * assumed it was unreachable. Turning this on is a real decision about a real
-   * network, so it is spelled explicitly rather than inferred from a host list.
-   */
-  allowPrivateAddresses?: boolean;
 }
 
 /**
@@ -76,15 +66,15 @@ export class BrowserPolicy {
 
   readonly allowedPorts: readonly number[];
 
-  readonly allowPrivateAddresses: boolean;
-
   constructor(options: BrowserPolicyOptions) {
+    if ('allowPrivateAddresses' in options) {
+      throw new TypeError('BrowserPolicy no longer accepts allowPrivateAddresses.');
+    }
     this.allowedHosts = options.allowedHosts;
     this.allowedActions = options.allowedActions ?? DEFAULT_ACTIONS;
     this.requireHttps = options.requireHttps ?? true;
     this.maxObservationBytes = options.maxObservationBytes ?? 65_536;
     this.allowedPorts = options.allowedPorts ?? [443];
-    this.allowPrivateAddresses = options.allowPrivateAddresses ?? false;
   }
 
   assertUrl(url: string): void {
@@ -112,7 +102,7 @@ export class BrowserPolicy {
 
     const host = parsed.hostname.toLowerCase().replace(/\.$/, '');
 
-    if (!this.allowPrivateAddresses && isPrivateHost(host)) {
+    if (isPrivateHost(host)) {
       throw new BrowserRefused(
         'private_address_refused',
         `Browser policy refuses the private or loopback host [${host}]. A browser an agent can ` +
@@ -147,7 +137,6 @@ export class BrowserPolicy {
       require_https: this.requireHttps,
       max_observation_bytes: this.maxObservationBytes,
       allowed_ports: [...this.allowedPorts],
-      allow_private_addresses: this.allowPrivateAddresses,
     };
   }
 

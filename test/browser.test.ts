@@ -71,17 +71,14 @@ describe('where an agent may navigate', () => {
     }
   });
 
-  it('lets a private address through only when it is asked for EXPLICITLY', () => {
-    // A real decision about a real network, spelled out rather than inferred
-    // from a host list.
+  it('refuses a declared private address even with HTTPS disabled', () => {
     const allowed = new BrowserPolicy({
       allowedHosts: ['localhost'],
       requireHttps: false,
       allowedPorts: [8080],
-      allowPrivateAddresses: true,
     });
 
-    expect(() => allowed.assertUrl('http://localhost:8080/')).not.toThrow();
+    expect(() => allowed.assertUrl('http://localhost:8080/')).toThrowError(BrowserRefused);
   });
 
   it('refuses something that is not a URL at all', () => {
@@ -112,7 +109,6 @@ describe('what an agent may do', () => {
     expect(policy().toObject()).toMatchObject({
       require_https: true,
       allowed_ports: [443],
-      allow_private_addresses: false,
     });
   });
 });
