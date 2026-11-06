@@ -45,7 +45,7 @@ network, so the defaults refuse rather than permit:
 |---|---|
 | `allowedHosts` is required | There is no "any host" to fall back to. The host list is the whole control. |
 | `requireHttps` is **on** | Downgrading is a decision, not a default. |
-| `allowPrivateAddresses` is **off** | A browser pointed at `http://169.254.169.254/` reads cloud metadata; one pointed at `localhost` reaches every service on the host that assumed it was unreachable. Allowing them is spelled out explicitly rather than inferred from the host list. |
+| Private addresses are always refused | Declaring a host does not permit private, loopback, metadata, or reserved destinations. |
 | `maxObservationBytes` caps what comes back | A page is attacker-influenced input on its way into a prompt. |
 
 ## The limit of the private-address check, stated plainly
